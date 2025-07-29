@@ -22,9 +22,6 @@ import { extname } from 'path';
 export class PropertyController {
   constructor(private readonly propertyService: PropertyService) {}
 
-  /**
-   * ✅ Handle Property Creation with File Uploads
-   */
   @Post()
   @UseInterceptors(
     FilesInterceptor('images', 5, {
@@ -42,26 +39,25 @@ export class PropertyController {
     @UploadedFiles() files: Express.Multer.File[] = [],
   ) {
     try {
-      console.log('📩 Received Property Data:', createPropertyDto);
-      console.log('📸 Uploaded Files:', files);
+      console.log('Received Property Data:', createPropertyDto);
+      console.log('Uploaded Files:', files);
 
-      createPropertyDto.images = files.length > 0 ? files.map((file) => file.filename) : [];
+      createPropertyDto.images =
+        files.length > 0 ? files.map((file) => file.filename) : [];
 
-      console.log('✅ Final Property Data Before Saving:', createPropertyDto);
+      console.log('Final Property Data:', createPropertyDto);
 
-      return await this.propertyService.create(createPropertyDto);
+      const property = await this.propertyService.create(createPropertyDto);
+      return property;
     } catch (error) {
-      console.error('❌ Internal Server Error:', error);
+      console.error('Error in Property Controller:', error);
       throw new HttpException(
-        'Internal Server Error: ' + error.message,
+        'Error saving property',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
 
-  /**
-   * ✅ Handle Property Updates with File Uploads
-   */
   @Patch(':id')
   @UseInterceptors(
     FilesInterceptor('images', 5, {
@@ -79,16 +75,17 @@ export class PropertyController {
     @Body() updatePropertyDto: UpdatePropertyDto,
     @UploadedFiles() files: Express.Multer.File[] = [],
   ) {
-    console.log('✏️ Updating Property ID:', id);
-    console.log('📸 New Uploaded Files:', files);
-
+    console.log('Updating Property ID:', id);
+    console.log('New Uploaded Files:', files);
+  
     if (files && files.length > 0) {
       updatePropertyDto.images = files.map((file) => file.filename);
     }
-
+  
+    // Call the PropertyService to update the property
     return this.propertyService.update(+id, updatePropertyDto);
   }
-
+  
   /**
    * ✅ Fetch All Properties
    */
@@ -98,7 +95,10 @@ export class PropertyController {
       return await this.propertyService.findAll();
     } catch (error) {
       console.error('❌ Error fetching properties:', error);
-      throw new HttpException('Error fetching properties', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        'Error fetching properties',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -122,7 +122,10 @@ export class PropertyController {
   async findByUser(@Param('userId') userId: string) {
     const properties = await this.propertyService.findByUserId(+userId);
     if (!properties.length) {
-      throw new HttpException('No properties found for this user.', HttpStatus.NOT_FOUND);
+      throw new HttpException(
+        'No properties found for this user.',
+        HttpStatus.NOT_FOUND,
+      );
     }
     return properties;
   }
@@ -136,7 +139,10 @@ export class PropertyController {
       return await this.propertyService.remove(+id);
     } catch (error) {
       console.error('❌ Error deleting property:', error);
-      throw new HttpException('Error deleting property', HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new HttpException(
+        'Error deleting property',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 }

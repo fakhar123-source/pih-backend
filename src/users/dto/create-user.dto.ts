@@ -1,24 +1,73 @@
-import { IsEmail, IsNotEmpty, IsOptional, MinLength, IsEnum } from 'class-validator';
-import { UserRole } from '../entities/user.entity';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsEmail,
+  IsArray,
+  ArrayNotEmpty,
+  ArrayUnique,
+  IsIn,
+  IsInt,
+  IsString,
+  Min,
+  IsNumber,
+} from 'class-validator';
 
 export class CreateUserDto {
   @IsNotEmpty()
-  fullName: string;
-
   @IsEmail()
   email: string;
 
-  @IsOptional()
-  phone?: string;
+  @IsNotEmpty()
+  phoneNumber: string;
 
   @IsNotEmpty()
-  @MinLength(6)
   password: string;
 
   @IsOptional()
-  registerAsInspector?: boolean; // If true, role should be 'inspector'
+  confirmPassword: string;
 
-  @IsEnum(UserRole)
   @IsOptional()
-  role?: UserRole; // ✅ Add this line
+  fullName?: string;
+
+  @IsNotEmpty()
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayUnique()
+  @IsIn(['seller', 'inspector'], { each: true })
+  roles: string[];
+  // Optional Inspector fields
+
+  @IsOptional()
+  @IsNumber()
+  @Min(18)
+  age: number;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  address: string;
+  
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  qualification: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(4)
+  workExperience: number;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  inspectorCategory: string;
+
+  @IsOptional()
+  image?: string;
+
+  @IsOptional()
+  experienceLetter?: string;
+  @IsOptional()
+  @IsString()
+  status?: string;
 }
