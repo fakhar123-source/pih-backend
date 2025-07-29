@@ -18,6 +18,13 @@ export class CreatePropertyDto {
 
   @IsString()
   city: string;
+  @IsOptional()
+  @IsNumber()
+  latitude?: number;
+
+  @IsOptional()
+  @IsNumber()
+  longitude?: number;
 
   @IsNumber()
   bedrooms: number;

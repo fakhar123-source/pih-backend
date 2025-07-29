@@ -1,48 +1,67 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany, OneToOne  } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  OneToMany,
+} from 'typeorm';
 import { Property } from '../../property/entities/property.entity'; // ✅ Correct path
-import { InspectorApplicant } from 'src/inspector-applicant/entities/inspector-applicant.entity';
-
-export enum UserRole {
-  SELLER = 'seller',
-  INSPECTOR = 'inspector',
-  ADMIN = 'admin',
-}
-
+import { Slot } from 'src/slots/entities/slot.entity';
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column()
-  fullName: string;
-
-  @Column({ unique: true })
   email: string;
 
-  @Column({ nullable: true })
-  phone: string;
+  @Column({ nullable: true })  // Allow phoneNumber to be nullable
+  phoneNumber: string;
 
   @Column()
   password: string;
 
-  @Column({
-    type: 'enum',
-    enum: UserRole,
-    default: UserRole.SELLER, // Default role is Seller
-  })
-  role: UserRole;
+  @Column({ nullable: true })  // Make confirmPassword nullable
+  confirmPassword: string;
+  
 
   @Column({ nullable: true })
-  image: string; // Assuming you will store the image URL or file path here
+  fullName?: string;
+  
+  @Column('simple-array')
+  roles: string[];
+
+  @Column({ nullable: true, default: 0 })
+  age?: number;
+
+  @Column({ nullable: true, default: '' })
+  address: string;
+
+  @Column({ nullable: true, default: '' })
+  qualification: string;
+
+  @Column({ nullable: true, default: 0 })
+  workExperience: number;
+
+  @Column({ nullable: true, default: '' })
+  inspectorCategory: string;
+
+  @Column({ nullable: true, default: '' })
+  image: string;
+
+  @Column({ nullable: true, default: '' })
+  experienceLetter: string;
+
+  @Column({ default: 'Pending' })
+  status: string;
 
   @CreateDateColumn()
   createdAt: Date;
+  // ✅ Define the relation between User and Property entities
+  @OneToMany(() => Property, (property) => property.user)
+  properties: Property[]; // This line establishes the relation
 
-  picture: string;
-  @OneToOne(() => InspectorApplicant, (inspector) => inspector.user)
-  inspectorApplicant: InspectorApplicant;
-  // ✅ One-to-Many relation: A user can have multiple properties
-  @OneToMany(() => Property, (property: Property) => property.user, { cascade: true })
-  properties: Property[];
-  
+  @OneToMany(() => Slot, (slot) => slot.user)
+  slots: Slot[];
 }
+

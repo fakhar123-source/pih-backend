@@ -1,22 +1,66 @@
-import { IsEmail, IsOptional, MinLength, IsString } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsEmail,
+  IsArray,
+  ArrayNotEmpty,
+  ArrayUnique,
+  IsIn,
+  IsInt,
+  IsString,
+  Min,
+  IsNumber,
+} from 'class-validator';
 
 export class UpdateUserDto {
-  @IsOptional()
-  @IsString()
-  fullName?: string;
-
   @IsOptional()
   @IsEmail()
   email?: string;
 
   @IsOptional()
-  phone?: string;
+  phoneNumber?: string;
 
   @IsOptional()
-  @MinLength(6)
   password?: string;
 
   @IsOptional()
+  fullName?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsIn(['seller', 'inspector'], { each: true })
+  roles?: string[];
+
+  @IsOptional()
+  @IsNumber()
+  @Min(18)
+  age?: number;
+
+  @IsOptional()
   @IsString()
-  picture?: string;  // Add picture field to handle image upload URL or path
+  address?: string;
+  
+  @IsOptional()
+  @IsString()
+  qualification?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(4)
+  workExperience?: number;
+
+  @IsOptional()
+  @IsString()
+  inspectorCategory?: string;
+
+  @IsOptional()
+  image?: string;
+
+  @IsOptional()
+  experienceLetter?: string;
+
+  @IsOptional()
+  @IsString()
+  status?: string;
 }

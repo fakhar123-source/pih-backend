@@ -10,7 +10,12 @@ import { JwtModule } from '@nestjs/jwt';
 import { diskStorage } from 'multer';
 import { RequestModule } from './requests/requests.module';
 import { BookingModule } from './booking/booking.module';
+import { ServeStaticModule } from '@nestjs/serve-static'; // Import the ServeStaticModule
+import { MessageModule } from './message/message.module';
+import { ChatModule } from './chat/chat.module';
+import { SlotsModule } from './slots/slots.module';
 import * as path from 'path';
+
 
 @Module({
   imports: [
@@ -36,12 +41,22 @@ import * as path from 'path';
     // ✅ File Upload Configuration using Multer
     MulterModule.register({
       storage: diskStorage({
-        destination: './uploads/',
+        destination: './uploads/', // This is where files will be saved
         filename: (req, file, callback) => {
           const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
           callback(null, `${uniqueSuffix}${path.extname(file.originalname)}`);
         },
       }),
+    }),
+
+    // ✅ Serve Static Files for images
+    ServeStaticModule.forRoot({
+      rootPath: path.join(__dirname, '..', 'uploads'),
+      serveRoot: '/uploads',
+      serveStaticOptions: {
+        cacheControl: true, // Enable browser caching
+        maxAge: 86400 // 1 day cache
+      }
     }),
 
     // ✅ Authentication Module (Ensure JWT is loaded globally)
@@ -61,6 +76,9 @@ import * as path from 'path';
     AuthModule,
     RequestModule,
     BookingModule,
+    MessageModule,
+    ChatModule,
+    SlotsModule,
   ],
 })
 export class AppModule {}

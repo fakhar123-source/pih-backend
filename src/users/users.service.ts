@@ -1,18 +1,26 @@
-import { Injectable, NotFoundException, UnauthorizedException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User, UserRole } from './entities/user.entity';
+import { User } from './entities/user.entity';
 import { Property } from '../property/entities/property.entity'; // ✅ Import Property Entity
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
+import { Slot } from 'src/slots/entities/slot.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Slot)
+    private readonly slotRepository: Repository<Slot>, // Add slot repository
     private readonly jwtService: JwtService,
   ) {}
 
@@ -20,10 +28,12 @@ export class UsersService {
    * ✅ Create New User (Includes Empty Properties)
    */
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const { fullName, email, phone, password, role } = createUserDto;
+    const { fullName, email, phoneNumber, password, roles } = createUserDto;
 
     // Check if user already exists
-    const existingUser = await this.userRepository.findOne({ where: { email } });
+    const existingUser = await this.userRepository.findOne({
+      where: { email },
+    });
     if (existingUser) {
       throw new ConflictException('User with this email already exists');
     }
@@ -34,9 +44,9 @@ export class UsersService {
     const user = this.userRepository.create({
       fullName,
       email,
-      phone,
+      phoneNumber,
       password: hashedPassword,
-      role: role || UserRole.SELLER, // Default role is seller
+      roles,
     });
 
     // Save User
@@ -50,8 +60,8 @@ export class UsersService {
    * ✅ Get All Users (Includes Properties)
    */
   async findAll(): Promise<User[]> {
-    return await this.userRepository.find({ 
-      relations: ['properties'] // ✅ Ensure properties are always included
+    return await this.userRepository.find({
+      relations: ['properties', 'slots'],
     });
   }
 
@@ -61,7 +71,7 @@ export class UsersService {
   async findOne(id: number): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { id },
-      relations: ['properties'], // ✅ Ensures properties are included
+      relations: ['properties', 'slots'], // Include slots in the relation
     });
 
     if (!user) {
@@ -75,15 +85,26 @@ export class UsersService {
    * ✅ Update User Details (Includes Password Hashing)
    */
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
-    const user = await this.findOne(id);
+    const user = await this.userRepository.findOne({ where: { id } });
 
-    // Hash password if it's being updated
-    if (updateUserDto.password) {
-      updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
     }
 
-    Object.assign(user, updateUserDto);
-    return await this.userRepository.save(user);
+    // Ensure all fields are updated correctly
+    user.fullName = updateUserDto?.fullName || user.fullName;
+    user.age = updateUserDto?.age || user.age;
+    user.address = updateUserDto?.address || user.address;
+    user.qualification = updateUserDto?.qualification || user.qualification;
+    user.workExperience = updateUserDto?.workExperience || user.workExperience;
+    user.inspectorCategory =
+      updateUserDto?.inspectorCategory || user.inspectorCategory;
+    user.image = updateUserDto?.image || user.image;
+    user.experienceLetter =
+      updateUserDto?.experienceLetter || user.experienceLetter;
+    user.status = updateUserDto?.status || user.status; // Optional field
+
+    return this.userRepository.save(user);
   }
 
   /**
@@ -98,28 +119,26 @@ export class UsersService {
    * ✅ Update User Profile (Includes Picture Update)
    */
   async updateUser(id: number, updateUserDto: UpdateUserDto): Promise<User> {
-    const user = await this.findOne(id);
+    const user = await this.userRepository.findOne({ where: { id } });
 
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    // Update user profile details without changing image path
     if (updateUserDto.fullName) user.fullName = updateUserDto.fullName;
     if (updateUserDto.email) user.email = updateUserDto.email;
-    if (updateUserDto.phone) user.phone = updateUserDto.phone;
+    if (updateUserDto.phoneNumber) user.phoneNumber = updateUserDto.phoneNumber;
 
-    if (updateUserDto.password) {
-      user.password = await bcrypt.hash(updateUserDto.password, 10);
-    }
-    
-    if (updateUserDto.picture) user.picture = updateUserDto.picture;
-
-    return await this.userRepository.save(user);
+    return await this.userRepository.save(user); // Save the user in the database
   }
-
   /**
    * ✅ Find User by Email (Includes Properties)
    */
   async findByEmail(email: string): Promise<User> {
     const user = await this.userRepository.findOne({
       where: { email },
-      relations: ['properties'], // ✅ Ensures properties are included
+      relations: ['properties', 'slots'], // Include slots in the relation
     });
 
     if (!user) {
@@ -153,7 +172,7 @@ export class UsersService {
    */
   async login(email: string, password: string) {
     const user = await this.validateUser(email, password);
-    const payload = { id: user.id, role: user.role };
+    const payload = { id: user.id, roles: user.roles };
 
     return {
       access_token: this.jwtService.sign(payload, { expiresIn: '1h' }), // Token expires in 1 hour
@@ -161,9 +180,21 @@ export class UsersService {
         id: user.id,
         email: user.email,
         fullName: user.fullName,
-        role: user.role,
-        properties: user.properties, // ✅ Ensure properties are included in login response
+        roles: user.roles,
       },
     };
+  }
+  // Add method to get user's slots
+  async getUserSlots(userId: number): Promise<Slot[]> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['slots'],
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    return user.slots;
   }
 }

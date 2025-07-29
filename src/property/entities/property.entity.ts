@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
-import { User } from '../../users/entities/user.entity'; // ✅ Correct path
+import { User } from '../../users/entities/user.entity';
 
 @Entity()
 export class Property {
@@ -12,8 +12,9 @@ export class Property {
   @Column({ type: 'varchar', nullable: false, default: 'Uncategorized' })
   category: string;
 
-  @Column()
+  @Column({ type: 'bigint', nullable: true }) // Make price nullable
   price: number;
+  
 
   @Column()
   description: string;
@@ -36,10 +37,15 @@ export class Property {
   @Column()
   yearBuilt: number;
 
-  @Column('text', { array: true, nullable: true }) // ✅ Allow nullable images
+  @Column({ type: 'double precision', nullable: true })
+  latitude: number;
+
+  @Column({ type: 'double precision', nullable: true })
+  longitude: number;
+
+  @Column('text', { array: true, nullable: true })
   images: string[];
 
-  // ✅ Many-to-One relation: Multiple properties belong to one user
-  @ManyToOne(() => User, (user: User) => user.properties, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, (user) => user.properties)
   user: User;
 }
